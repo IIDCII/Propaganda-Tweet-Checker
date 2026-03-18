@@ -1,0 +1,45 @@
+services:
+  # THE NEVIM HUB (Everything mounted here)
+  dev-shell:
+    build:
+      context: ./api
+      target: development
+    volumes:
+      - .:/workspace:cached           # Access to api/, ml_service/, training/, frontend/
+      - nvim_data:/root/.local
+      - ${HOME}/.config/nvim:/root/.config/nvim
+    stdin_open: true
+    tty: true
+    environment:
+      - TERM=xterm-256color
+      - COLORTERM=truecolor
+
+  # INTEGRATION TESTER (Triggered on demand)
+  tester:
+    profiles: ["tools"]
+    build: ./integration_tests
+    environment:
+      - TARGET_API_URL=http://api:3000
+    networks:
+      - propaganda-network
+
+  # TRAINING (Triggered for heavy ML jobs)
+  training:
+    profiles: ["tools"]
+    build: ./training
+    volumes:
+      - ./training:/training
+      - ./data:/training/data
+    # If you have an NVIDIA GPU locally:
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices: [{driver: nvidia, count: 1, capabilities: [gpu]}]
+
+networks:
+  propaganda-network:
+    external: true # Shared across all services
+
+volumes:
+  nvim_data:
+  nvim_config:
