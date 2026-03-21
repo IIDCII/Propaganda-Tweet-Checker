@@ -1,6 +1,10 @@
-fastapi==0.109.0
-uvicorn[standard]==0.27.0
-pydantic==2.5.3
-requests==2.31.0
-onnxruntime==1.16.3
-numpy==1.26.3
+huggingface_hub
+pytest
+pytest-mock
+httpx
+fastapi
+uvicorn
+httpx
+beautifulsoup4
+vllm>=0.6.0
+duckduckgo_search
