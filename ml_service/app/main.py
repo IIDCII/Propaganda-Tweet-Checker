@@ -28,19 +28,8 @@ class AnalysisResponse(BaseModel):
 async def post_analysis(request: TweetRequest):
     tweet_data = await run_in_threadpool(scrape_tweet, request.url)
 
-    if not tweet_data.get("text"):
-        return {"analysis": "Error: Could not scrape tweet", "status": "failed"}
+    output = await engine.analyse_tweet(
+        tweet_data=tweet_data,
+    )
 
-    output = await run_in_threadpool(engine.analyse_tweet, tweet_data)
-    return output
-
-
-@app.get("/metrics")
-async def get_metrics():
-    stats = engine.engine.get_stats()
-
-    return {
-        "running": stats.num_running,
-        "waiting": stats.num_waiting,
-        "gpu_cache_usage": stats.gpu_cache_usage,
-    }
+    return output["analysis"]

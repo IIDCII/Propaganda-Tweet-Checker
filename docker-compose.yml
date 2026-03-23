@@ -6,6 +6,8 @@ services:
       POSTGRES_DB: propaganda_db
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
+    expose:
+      - "5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
@@ -19,11 +21,15 @@ services:
     environment:
       - DATABASE_URL=postgres://user:password@db:5432/propaganda_db
       - ML_SERVICE_URL=http://ml_service:8000
+    ports:
+      - "3000:3000"
 
   ml_service:
     build: 
       context: ./ml_service
       target: production
+    expose:
+      - "8000"
     # If running on AWS with GPU support:
     # deploy:
     #   resources:
@@ -32,7 +38,35 @@ services:
     #         - driver: nvidia
     #           count: 1
     #           capabilities: [gpu]
+  
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    restart: always
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin # Change this for AWS!
+    volumes:
+      - grafana_data:/var/lib/grafana
+    restart: always
+
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter
+    environment:
+      DATA_SOURCE_NAME: "postgresql://user:password@db:5432/propaganda_db?sslmode=disable"
+    depends_on:
+      - db
 
 volumes:
+  grafana_data:
   postgres_data:
   hf_cache:

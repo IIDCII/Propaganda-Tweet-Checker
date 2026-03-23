@@ -1,6 +1,7 @@
 huggingface_hub
 pytest
 pytest-mock
+pytest-asyncio
 httpx
 fastapi
 uvicorn
@@ -8,3 +9,4 @@ httpx
 beautifulsoup4
 vllm>=0.6.0
 duckduckgo_search
+pillow
