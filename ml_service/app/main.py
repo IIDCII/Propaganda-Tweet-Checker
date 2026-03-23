@@ -1,35 +1,46 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
-from pydantic import BaseModel
-from scraper import scrape_tweet
-from model_inference import HFInference
-from fastapi.concurrency import run_in_threadpool
-from cache_model import download_model
+from vllm import AsyncLLMEngine, AsyncEngineArgs
+from app.model_inference import HFInference
+from app.scraper import scrape_tweet
 
-app = FastAPI()
-
-# TODO this model selection is currently hardcoded for now.
-# Change so that it's modular for cascading in future versions
-
-download_model()
-model_id = "Qwen/Qwen2-VL-2B-Instruct"
-engine = HFInference(model_id)
+# 1. This dict will hold our "global" resources
+ml_models = {}
 
 
-class TweetRequest(BaseModel):
-    url: str
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # --- STARTUP ---
+    # Load the heavy engine once
+
+    engine_args = AsyncEngineArgs(
+        model="Qwen/Qwen2-VL-2B-Instruct",
+        limit_mm_per_prompt={"image": 1},
+        trust_remote_code=True,
+        max_model_len=1024,
+        device="cuda",
+        gpu_memory_utilization=0.8,
+        hf_overrides={"rope_scaling": {"rope_type": "default"}},
+    )
+    engine = AsyncLLMEngine.from_engine_args(engine_args)
+
+    # Inject the engine into our service
+    ml_models["inference_service"] = HFInference(
+        engine=engine, model_id="propaganda-v1"
+    )
+
+    yield  # The app runs and handles requests here
+
+    # --- SHUTDOWN ---
+    # Clean up resources (like GPU memory) if needed
+    ml_models.clear()
 
 
-class AnalysisResponse(BaseModel):
-    analysis: str
-    status: str = "success"
+app = FastAPI(lifespan=lifespan)
 
 
 @app.post("/analyze")
-async def post_analysis(request: TweetRequest):
-    tweet_data = await run_in_threadpool(scrape_tweet, request.url)
-
-    output = await engine.analyse_tweet(
-        tweet_data=tweet_data,
-    )
-
-    return output["analysis"]
+async def analyze(tweet_url: str):
+    tweet_data = scrape_tweet(tweet_url)
+    result = await ml_models["inference_service"].analyse_tweet(tweet_data)
+    return result

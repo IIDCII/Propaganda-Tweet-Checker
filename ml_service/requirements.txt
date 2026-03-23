@@ -7,6 +7,8 @@ fastapi
 uvicorn
 httpx
 beautifulsoup4
-vllm>=0.6.0
+vllm
 duckduckgo_search
 pillow
+transformers==4.57.0
+trl

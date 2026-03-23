@@ -6,12 +6,6 @@ class HFInference:
     def __init__(self, model_id: str, engine):
         self.model_id = model_id
         self.engine = engine
-        # engine_args = AsyncEngineArgs(
-        #     model=model_id,
-        #     limit_mm_per_prompt={"image": 1},
-        #     trust_remote_code=True,
-        # )
-        # self.engine = AsyncLLMEngine.from_engine_args(engine_args)
 
     async def analyse_tweet(self, tweet_data: dict) -> dict:
         request_id = str(uuid.uuid4())

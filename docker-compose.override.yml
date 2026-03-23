@@ -7,12 +7,21 @@ services:
     volumes:
       - .:/workspace:cached           # Access to api/, ml_service/, training/, frontend/
       - nvim_data:/root/.local
+      - hf_cache:/root/.cache/huggingface # Add this!
       - ${HOME}/.config/nvim:/root/.config/nvim
     stdin_open: true
     tty: true
     environment:
       - TERM=xterm-256color
       - COLORTERM=truecolor
+      - HF_HOME=/root/.cache/huggingface
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
 
   # INTEGRATION TESTER (Triggered on demand)
   tester:
